@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>千千！生日快樂！</title>
+    <style>
+        :root {
+            --primary-color: #ff758c;
+            --secondary-color: #ff7eb3;
+            --bg-color: #ffeef2;
+            --text-color: #4a4a4a;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, "Microsoft JhengHei";
+            background: linear-gradient(135deg, #ffeef2 0%, #e6f0fa 100%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .progress {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 15px;
+        }
+
+        .question {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background-color: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .option-btn:hover {
+            background-color: var(--bg-color);
+            border-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .option-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 結局樣式 */
+        .result-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .friend-end {
+            color: #ff477e;
+        }
+
+        .forced-end {
+            color: #d90429;
+            animation: shake 0.5s infinite;
+        }
+
+        .content {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .easter-egg {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-size: 15px;
+            color: #856404;
+            text-align: left;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 117, 140, 0.4);
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(255, 117, 140, 0.6);
+        }
+
+        /* 煙火 Canvas */
+        #fireworks {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            display: none;
+        }
+
+        /* 畫面晃動特效（強制愛結局用） */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(0px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(2px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(2px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="fireworks"></canvas>
+
+    <div class="container" id="game-container">
+        </div>
+
+    <script>
+        // 遊戲問題資料設定
+        const questions = [
+            {
+                q: "第一題：我們認識的第一天是哪一天？",
+                options: ["七月七號", "九月二號", "十二月二十五號"],
+                correct: "九月二號"
+            },
+            {
+                q: "第二題：我今年幾歲了？",
+                options: ["15 歲", "16 歲", "18 歲"],
+                correct: "16 歲"
+            },
+            {
+                q: "第三題：我的生日是哪一天？",
+                options: ["十月十九號", "二月十四號", "八月三十號"],
+                correct: "十月十九號"
+            },
+            {
+                q: "第四題：我推（最喜歡的偶像/角色）的頭髮顏色是什麼？",
+                options: ["藍色", "黑色", "紅色"],
+                correct: "紅色"
+            },
+            {
+                q: "第五題：我是你最好的朋友嗎？",
+                options: ["是", "不是", "不確定（這題只有前兩個有用喔）"], 
+                correct: "是" // 預設正確為是，非是則會走特殊分支
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let animationFrameId = null;
+
+        const gameContainer = document.getElementById('game-container');
+        const canvas = document.getElementById('fireworks');
+        const ctx = canvas.getContext('2d');
+
+        // 初始化遊戲
+        function startGame() {
+            currentQuestionIndex = 0;
+            score = 0;
+            stopFireworks();
+            renderQuestion();
+        }
+
+        // 渲染題目
+        function renderQuestion() {
+            const currentQ = questions[currentQuestionIndex];
+            
+            // 處理第五題只有兩個選項的要求（雖然陣列有三個，我們只抓前兩個）
+            const optionsToRender = currentQuestionIndex === 4 ? currentQ.options.slice(0, 2) : currentQ.options;
+
+            let optionsHtml = '';
+            optionsToRender.forEach(option => {
+                optionsHtml += `<button class="option-btn" onclick="handleAnswer('${option}')">${option}</button>`;
+            });
+
+            gameContainer.innerHTML = `
+                <h1>🎉 生日大考驗 🎉</h1>
+                <div class="progress">問題 ${currentQuestionIndex + 1} / ${questions.length}</div>
+                <div class="question">${currentQ.q}</div>
+                <div class="options-container">
+                    ${optionsHtml}
+                </div>
+            `;
+        }
+
+        // 處理選擇答案
+        function handleAnswer(selectedOption) {
+            const currentQ = questions[currentQuestionIndex];
+
+            // 判斷前四題是否答對
+            if (currentQuestionIndex < 4) {
+                if (selectedOption === currentQ.correct) {
+                    score++;
+                }
+                currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                // 第五題的分歧結局判斷
+                if (selectedOption === "是") {
+                    score++; // 如果選是，這題也算對
+                    showFriendEnding();
+                } else {
+                    showForcedLoveEnding();
+                }
+            }
+        }
+
+        // 結局A：朋友結局
+        function showFriendEnding() {
+            let easterEggHtml = '';
+            if (score < 2) {
+                easterEggHtml = `
+                    <div class="easter-egg">
+                        <strong>🥚 隱藏彩蛋：</strong><br>
+                        等等，你也太誇張了吧！但你生日，所以放過你了（怒）😡
+                    </div>
+                `;
+            }
+
+            gameContainer.innerHTML = `
+                <div class="result-title friend-end">💕 結局 - 朋友 💕</div>
+                <div class="content">
+                    恭喜你，千千，祝你 16 歲生日快樂！<br>
+                    你一共答對了 <strong>${score}</strong> 題！<br><br>
+                    ✨ <strong>你也是我最好的朋友喔！</strong> ✨
+                </div>
+                ${easterEggHtml}
+            `;
+            
+            startFireworks();
+        }
+
+        // 結局B：強制愛結局
+        function showForcedLoveEnding() {
+            gameContainer.innerHTML = `
+                <div class="result-title forced-end">⛓️ 結局 - 強制愛 ⛓️</div>
+                <div class="content">
+                    楊千慧小姐，你一共答對 <strong>${score}</strong> 題。<br><br>
+                    <span style="color: red; font-weight: bold; font-size: 20px;">
+                        你不可以給我選不是！！！
+                    </span><br>
+                    我最好的朋友，你現在給我立刻回去重做一次喔！💢
+                </div>
+                <button class="action-btn" onclick="startGame()">立刻回去重選</button>
+            `;
+        }
+
+        // ================= 煙火特效系統 =================
+        let particles = [];
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.radius = Math.random() * 3 + 1;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 6 + 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.015 + 0.015;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.05; // 重力
+                this.alpha -= this.decay;
+            }
+        }
+
+        function createFirework() {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * (canvas.height * 0.6);
+            const colors = ['#ff477e', '#ff758c', '#ff8fa3', '#ffb3c1', '#00f5d4', '#70e000', '#ffea00'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            for (let i = 0; i < 60; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function loop() {
+            ctx.fillStyle = 'rgba(255, 238, 242, 0.2)'; // 帶有一點粉色底色的拖尾
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (Math.random() < 0.05) {
+                createFirework();
+            }
+            
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+            animationFrameId = requestAnimationFrame(loop);
+        }
+
+        function startFireworks() {
+            canvas.style.display = 'block';
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            loop();
+        }
+
+        function stopFireworks() {
+            canvas.style.display = 'none';
+            cancelAnimationFrame(animationFrameId);
+            particles = [];
+            window.removeEventListener('resize', resizeCanvas);
+        }
+
+        // 網頁載入後直接開始遊戲
+        window.onload = startGame;
+    </script>
+</body>
+</html>
